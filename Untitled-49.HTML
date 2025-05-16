@@ -1,0 +1,2098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mazowe Hydrology Project</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.tailwindcss.com" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.min.js"></script>
+    <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
+    <style>
+        :root {
+            --primary-color:#0099CC; /* Set primary color to maroon */
+            --primary-dark: #0099CC; /* Darker shade of maroon */
+            --primary-light: #0099CC; /* Lighter shade of blue */
+            --background-color: #0099CC; /* Updated background color */
+            --text-color: rgb(9, 9, 9); /* Maroon text color */
+            --secondary-text-color: #ffffff; /* White for secondary text */
+            --border-color: #333; /* Dark border color */
+            --accent-color: #0099CC; /* Accent color matching blue theme */
+            --transition: all 0.3s ease;
+        }
+        
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color); /* Apply the updated background color */
+            color: var(--text-color); /* Maroon text color */
+            scroll-behavior: smooth;
+            transition: var(--transition);
+        }
+
+        .dark {
+            color-scheme: dark;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            display: none; /* Hidden by default */
+            z-index: 1;
+            background-color: var(--background-color); /* Apply the updated background color to the map */
+        }
+
+        /* Updated Welcome Page */
+        #welcome-page {
+            height: 100vh; /* Adjusted height */
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        #welcome-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url("C:/Users/User/Downloads/Homepage_16_9.jpg") no-repeat center center; /* Background image */
+            background-size: cover; /* Ensure the image covers the entire page */
+            opacity: 0.5; /* Reduce opacity by 20% */
+            z-index: 1; /* Place it behind the content */
+        }
+
+        /* Welcome content styling */
+        .welcome-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10; /* Ensure it appears above the background image */
+            text-align: center;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .welcome-content h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            color: maroon;
+        }
+
+        .welcome-content p {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: rgb(13, 13, 13);
+        }
+
+        .get-started-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 25px;
+            background: red;
+            color: var(--secondary-text-color);
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .get-started-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Add animation for the welcome text */
+        .welcome-content h1, .welcome-content p {
+            opacity: 0; /* Start invisible */
+            transform: translateY(20px); /* Start slightly below */
+            animation: fadeInUp 1s ease-out forwards; /* Animate into view */
+        }
+
+        .welcome-content h1 {
+            animation-delay: 0.2s; /* Delay for the heading */
+        }
+
+        .welcome-content p {
+            animation-delay: 0.4s; /* Delay for the paragraph */
+        }
+
+        /* Keyframes for the fade-in-up animation */
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* The rest of the styles are unchanged for map and other functionality */
+        #legend {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            background: var(--background-color); /* Apply the updated background color to the legend */
+            color: var(--text-color); /* Maroon text color */
+            border: 1px solid var(--border-color); /* Dark border */
+            padding: 8px;
+            border: none;
+            z-index: 1000;
+            width: 100px;
+            height: auto;
+            max-height: 180px;
+            overflow-y: auto;
+            text-align: left;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none; /* Hidden by default */
+            transition: var(--transition);
+            font-size: 11px;
+        }
+
+        .dark #legend {
+            background: #0099CC;
+            color: var(--dark-text);
+        }
+
+        #legend img {
+            width: 70px;
+            height: auto;
+            max-height: 70px;
+            margin-bottom: 1px;
+            border-radius: 4px;
+        }
+
+        #legend-title {
+            font-weight: bold;
+            font-size: 11px;
+            margin-bottom: 5px;
+            text-align: left;
+            color: #eaeaea; /* Maroon text color */
+            border-bottom: 1px solid #eaeaea;
+            padding-bottom: 5px;
+        }
+
+        .dark #legend-title {
+            color: var(--primary-light);
+            border-bottom: 1px solid #444;
+        }
+
+        .map-title {
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background-color: #0099CC; /* Updated background color */
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: none; /* Hidden by default */
+            transition: var(--transition);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        #file-input-container {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .custom-file-input {
+            width: auto;
+            font-size: 14px;
+            background: #0099CC; /* Updated background color */
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: none; /* Remove hover motion */
+        }
+
+        .custom-file-input:hover {
+            background: #006699; /* Darker blue on hover */
+        }
+
+        .custom-popup {
+            font-size: 12px;
+            line-height: 1.4;
+            max-width: 280px;
+        }
+
+        .kml-legend {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px #ccc;
+            font-size: 10px;
+            color: var(--light-text);
+        }
+
+        .dark .kml-legend {
+            border-top: 1px dashed #555;
+            color: var(--dark-text);
+        }
+
+        .kml-legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .point-color {
+            width: 10px;
+            height: 10px;
+            margin-right: 4px;
+            border: 1px solid #333;
+            background-color: #ff0000;
+            border-radius: 50%;
+        }
+
+        .dark .point-color {
+            border: 1px solid #ccc;
+        }
+
+        .line-color {
+            width: 12px;
+            height: 2px;
+            margin-right: 4px;
+            background-color: #111311;
+        }
+
+        .polygon-color {
+            width: 12px;
+            height: 2px;
+            margin-right: 4px;
+            background-color: #0b0b0b;
+        }
+
+        /* Move attribution to bottom left */
+        .leaflet-container .leaflet-control-attribution {
+            margin-left: 0px;
+            margin-right: auto;
+            left: 0;
+            right: auto;
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 9px;
+            border-radius: 4px;
+        }
+
+        /* Style for feature info popup */
+        .feature-info-popup {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .feature-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+
+        .feature-info-table th, .feature-info-table td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: left;
+        }
+
+        .dark .feature-info-table th, .dark .feature-info-table td {
+            border: 1px solid #444;
+        }
+
+        .feature-info-table th {
+            background-color: #f2f2f2;
+            color: #333;
+        }
+
+        .dark .feature-info-table th {
+            background-color: #333;
+            color: #f2f2f2;
+        }
+
+        /* Hide the default file input */
+        #kml-input {
+            display: none;
+        }
+
+        /* Updated Measure Popup - Smaller and Higher */
+        #measure-popup {
+            position: absolute;
+            left: 10px;
+            top: 35%; /* Moved up slightly from 40% */
+            width: 150px; /* Reduced from 180px */
+            background: #0099CC; /* Updated background color */
+            color: #eaeaea; /* Maroon text color */
+            border: 1px solid var(--border-color); /* Dark border */
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            padding: 6px; /* Reduced from 8px */
+            z-index: 1000;
+            font-size: 10px; /* Reduced from 11px */
+            display: none;
+        }
+
+        #measure-popup .title {
+            font-weight: bold;
+            color: #eaeaea; /* Maroon text color */
+            margin-bottom: 4px; /* Reduced from 6px */
+            font-size: 11px; /* Reduced from 12px */
+            border-bottom: 1px solid #eee;
+            padding-bottom: 3px; /* Reduced from 4px */
+        }
+
+        #measure-popup .form-group {
+            margin-bottom: 4px; /* Reduced from 6px */
+        }
+
+        #measure-popup label {
+            display: block;
+            margin-bottom: 1px; /* Reduced from 2px */
+            font-weight: 600;
+            font-size: 9px; /* Reduced from 10px */
+            color: #eaeaea; /* Maroon text color */
+        }
+
+        #measure-popup select {
+            width: 100%;
+            padding: 2px; /* Reduced from 3px */
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            background-color: white;
+            font-size: 9px; /* Reduced from 10px */
+            height: 20px; /* Reduced from 22px */
+        }
+
+        #measure-popup .option-group {
+            margin-bottom: 4px; /* Reduced from 6px */
+            display: flex;
+            gap: 6px; /* Reduced from 8px */
+        }
+
+        #measure-popup .radio-option {
+            margin-bottom: 1px; /* Reduced from 2px */
+            display: flex;
+            align-items: center;
+        }
+
+        #measure-popup .radio-option input {
+            margin-right: 3px; /* Reduced from 4px */
+            accent-color: var(--primary-color); /* Set checkbox/radio accent color to maroon */
+        }
+
+        #measure-popup .radio-option label {
+            font-size: 9px; /* Reduced from 10px */
+            margin-bottom: 0;
+        }
+
+        #measure-popup .actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px; /* Reduced from 8px */
+        }
+
+        #measure-popup button {
+            padding: 2px 6px; /* Reduced from 3px 8px */
+            border: none;
+            border-radius: 3px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 9px; /* Reduced from 10px */
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #measure-result {
+            background-color: #f8f9fa; /* Light background */
+            border-radius: 3px;
+            padding: 4px; /* Reduced from 5px */
+            margin-top: 4px; /* Reduced from 6px */
+            font-weight: bold;
+            text-align: center;
+            min-height: 14px; /* Reduced from 16px */
+            font-size: 9px; /* Reduced from 10px */
+            color: black; /* Set text color to black */
+        }
+
+        #measure-instructions {
+            font-size: 9px; /* Reduced from 10px */
+            margin-top: 3px; /* Reduced from 4px */
+            line-height: 1.2;
+        }
+
+        /* Move the transparency control further to the far right */
+        .transparency-control {
+            position: absolute;
+            top: 163px; /* Adjust this value to position it vertically */
+            right: -10px; /* Push it further to the right */
+            padding: 1px; /* Reduced padding */
+            background: #0099CC; /* Updated background color */
+            color: #eaeaea; /* Maroon text color */
+            border: 1px solid var(--border-color); /* Dark border */
+            border-radius: 8px; /* Rounded corners */
+            margin-top: 0; /* Remove any additional margin */
+            width: 120px;
+            box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            display: block; /* Ensure it is visible */
+            transition: var(--transition);
+        }
+
+        .transparency-control label {
+            display: block;
+            font-size: 7px; /* Reduced font size */
+            margin-bottom: 1px; /* Reduced margin */
+            font-weight: 600;
+            color: #eaeaea; /* Maroon text color */
+        }
+
+        .transparency-control input {
+            width: 100%;
+            margin-bottom: 1px; /* Reduced margin */
+            accent-color: white; /* Set slider accent color to white */
+            height: 3px; /* Reduced height for a thinner slider */
+            background-color: white; /* Set the slider track to white */
+            border-radius: 5px; /* Add rounded corners to the slider track */
+            outline: none; /* Remove the default outline */
+            -webkit-appearance: none; /* Remove default styling for WebKit browsers */
+        }
+
+        .transparency-control input::-webkit-slider-thumb {
+            -webkit-appearance: none; /* Remove default styling for WebKit browsers */
+            appearance: none;
+            width: 10px; /* Width of the slider thumb */
+            height: 10px; /* Height of the slider thumb */
+            background: #0099CC; /* Thumb color */
+            border-radius: 50%; /* Rounded thumb */
+            cursor: pointer; /* Pointer cursor on hover */
+        }
+
+        .transparency-control input::-moz-range-thumb {
+            width: 10px; /* Width of the slider thumb */
+            height: 10px; /* Height of the slider thumb */
+            background: #0099CC; /* Thumb color */
+            border-radius: 50%; /* Rounded thumb */
+            cursor: pointer; /* Pointer cursor on hover */
+        }
+
+        .transparency-control .percentage {
+            text-align: center;
+            font-size: 9px; /* Reduced font size */
+            color: var(--text-color); /* Maroon text color */
+            font-weight: bold;
+        }
+
+        /* Custom layer control - Non-collapsible */
+        .leaflet-control-layers {
+            top: 0.5rem !important; /* Align to the very top */
+            right: 0 !important; /* Align to the very right */
+            margin: 0 !important; /* Remove any margins */
+            padding: 5px !important; /* Add a small padding for spacing */
+            background: var(--background-color); /* Apply the updated background color to the layer control */
+            color: #eaeaea; /* Maroon text color */
+            border: 1px solid var(--border-color); /* Dark border */
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            width: auto !important; /* Ensure it adjusts dynamically */
+            opacity: 1 !important;
+            overflow: hidden !important; /* Completely remove scroll bar */
+            max-height: none !important; /* Remove height restriction */
+        }
+
+        /* Force the control to stay expanded */
+        .leaflet-control-layers.leaflet-control {
+            display: block !important;
+        }
+
+        /* Hide the toggle button */
+        .leaflet-control-layers-toggle {
+            display: none !important;
+        }
+
+        /* Custom zoom control - below the buttons */
+        .leaflet-control-zoom {
+            margin-top: 50px !important; /* Position below buttons */
+            margin-left: 2px !important;
+            display: none; /* Hidden by default */
+            background: var(--background-color); /* Apply the updated background color */
+            color: #eaeaea; /* Maroon text color */
+            border: 1px solid var(--border-color); /* Dark border */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            border-radius: 8px !important;
+            overflow: hidden;
+        }
+
+        .leaflet-control-zoom a {
+            background-color: #0099CC !important; /* Updated background color */
+            color: white !important; /* Set icon color to white */
+            width: 30px !important;
+            height: 30px !important;
+            line-height: 30px !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            text-align: center;
+            border: none !important;
+            box-shadow: none !important;
+            transition: var(--transition) !important;
+        }
+
+        .leaflet-control-zoom a:hover {
+            background-color: #006699 !important; /* Darker blue on hover */
+            color: white !important; /* Keep icon color white on hover */
+        }
+
+        .dark .leaflet-control-zoom a {
+            background-color: #333 !important;
+            color: var(--primary-light) !important;
+        }
+
+        .dark .leaflet-control-zoom a:hover {
+            background-color: var(--primary-light) !important;
+            color: var(--dark-bg) !important;
+        }
+
+        /* Custom measure button that will be added to zoom controls */
+        .leaflet-control-zoom-measure {
+            width: 30px !important;
+            height: 30px !important;
+            line-height: 30px !important;
+            background-color: #0099CC;
+            color:#eaeaea!important;
+            font-size: 16px !important;
+            text-align: center;
+            cursor: pointer;
+            border-top: 1px solid #100f0f !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dark .leaflet-control-zoom-measure {
+            background-color: #333 !important;
+            color: #eaeaea !important;
+            border-top: 1px solid #444 !important;
+        }
+
+        .leaflet-control-zoom-measure:hover {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+        }
+
+        .dark .leaflet-control-zoom-measure:hover {
+            background-color: var(--primary-light) !important;
+            color: var(--dark-bg) !important;
+        }
+
+        /* Measure popup positioned on the left side of the map - REDUCED SIZE */
+        #measure-popup {
+            position: absolute;
+            left: 2px;
+            top: 30%; /* Moved up slightly from 40% */
+            width: 150px; /* Reduced from 180px */
+            background: #0099CC; /* Updated background color */
+            color: #eaeaea; /* Maroon text color */
+            border: 1px solid var(--border-color); /* Dark border */
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            padding: 6px; /* Reduced from 8px */
+            z-index: 1000;
+            font-size: 10px; /* Reduced from 11px */
+            display: none;
+        }
+
+        .dark #measure-popup {
+            background-color: #333;
+            color: var(--dark-text);
+        }
+
+        #measure-popup .title {
+            font-weight: bold;
+            color: #eaeaea; /* Maroon text color */
+            margin-bottom: 4px; /* Reduced from 6px */
+            font-size: 11px; /* Reduced from 12px */
+            border-bottom: 1px solid #eee;
+            padding-bottom: 3px; /* Reduced from 4px */
+        }
+
+        .dark #measure-popup .title {
+            color: var(--primary-light);
+            border-bottom: 1px solid #444;
+        }
+
+        #measure-popup .form-group {
+            margin-bottom: 4px; /* Reduced from 6px */
+        }
+
+        #measure-popup label {
+            display: block;
+            margin-bottom: 1px; /* Reduced from 2px */
+            font-weight: 600;
+            font-size: 9px; /* Reduced from 10px */
+            color: var(--text-color); /* Maroon text color */
+        }
+
+        #measure-popup select {
+            width: 100%;
+            padding: 2px; /* Reduced from 3px */
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            background-color: white;
+            font-size: 9px; /* Reduced from 10px */
+            height: 20px; /* Reduced from 22px */
+        }
+
+        .dark #measure-popup select {
+            background-color: #444;
+            border: 1px solid #555;
+            color: var(--dark-text);
+        }
+
+        #measure-popup .option-group {
+            margin-bottom: 4px; /* Reduced from 6px */
+            display: flex;
+            gap: 6px; /* Reduced from 8px */
+        }
+
+        #measure-popup .radio-option {
+            margin-bottom: 1px; /* Reduced from 2px */
+            display: flex;
+            align-items: center;
+        }
+
+        #measure-popup .radio-option input {
+            margin-right: 3px; /* Reduced from 4px */
+            accent-color: var(--primary-color); /* Set checkbox/radio accent color to maroon */
+        }
+
+        #measure-popup .radio-option label {
+            font-size: 9px; /* Reduced from 10px */
+            margin-bottom: 0;
+        }
+
+        #measure-popup .actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px; /* Reduced from 8px */
+        }
+
+        #measure-popup button {
+            padding: 2px 6px; /* Reduced from 3px 8px */
+            border: none;
+            border-radius: 3px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 9px; /* Reduced from 10px */
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #measure-popup button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        #measure-popup button.secondary {
+            background-color: #6c757d;
+        }
+
+        #measure-popup button.secondary:hover {
+            background-color: #5a6268;
+        }
+
+        #measure-result {
+            background-color: #f8f9fa; /* Light background */
+            border-radius: 3px;
+            padding: 4px; /* Reduced from 5px */
+            margin-top: 4px; /* Reduced from 6px */
+            font-weight: bold;
+            text-align: center;
+            min-height: 14px; /* Reduced from 16px */
+            font-size: 9px; /* Reduced from 10px */
+            color: black; /* Set text color to black */
+        }
+
+        .dark #measure-result {
+            background-color: #222;
+        }
+
+        #measure-instructions {
+            font-size: 9px; /* Reduced from 10px */
+            margin-top: 3px; /* Reduced from 4px */
+            line-height: 1.2;
+        }
+
+        /* Position measure result popup */
+        .leaflet-measure-resultpopup {
+            background-color: white !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+            font-size: 12px !important;
+            padding: 6px !important;
+        }
+
+        .dark .leaflet-measure-resultpopup {
+            background-color: #333 !important;
+            color: var(--dark-text) !important;
+        }
+
+        /* Floating navigation for map page - moved to top */
+        .floating-nav-buttons {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            z-index: 1000;
+            background: #0099CC; /* Updated background color */
+            padding: 6px;
+            border-radius: 30px;
+            box-shadow: 0 2px 10px rgb(0, 0, 0);
+            display: none; /* Hidden by default */
+            transition: var(--transition);
+        }
+
+        .dark .floating-nav-buttons {
+            background: var(--primary-dark);
+        }
+
+        .floating-nav-button {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 30px;
+            height: 30px;
+            margin: 0 2px;
+            background: #0099CC; /* Updated background color */
+            color: var(--secondary-text-color); /* White text */
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            transition: var(--transition);
+            box-shadow: 0 1px 4px rgb(0, 0, 0);
+        }
+
+        .dark .floating-nav-button {
+            background: #222;
+            color: var(--primary-light);
+        }
+
+        .floating-nav-button:hover {
+            background: #006699; /* Darker blue on hover */
+            color: var(--secondary-text-color); /* White text on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+
+        .dark .floating-nav-button:hover {
+            background: var(--primary-light);
+            color: var(--dark-bg);
+        }
+
+        /* Loading indicator */
+        .loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1001;
+            background: var(--background-color); /* Apply the updated background color to the loading indicator */
+            color: #eaeaea; /* Maroon text */
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .dark .loading-indicator {
+            background: #333;
+            color: var(--primary-light);
+        }
+
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0, 82, 204, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color); /* Spinner in maroon */
+            animation: spin 1s linear infinite;
+        }
+
+        .dark .loading-spinner {
+            border: 2px solid rgba(77, 148, 255, 0.3);
+            border-top-color: var(--primary-light);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .welcome-content {
+                padding: 20px;
+            }
+            
+            .welcome-content h1 {
+                font-size: 1.8rem;
+            }
+            
+            .map-title {
+                max-width: 80%;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-size: 13px;
+            }
+            
+            #measure-popup {
+                width: 160px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .welcome-content {
+                padding: 15px;
+            }
+            
+            .welcome-content h1 {
+                font-size: 1.6rem;
+            }
+            
+            .welcome-content p {
+                font-size: 0.9rem;
+                max-width: 100%;
+            }
+            
+            #measure-popup {
+                width: 150px;
+                font-size: 10px;
+            }
+        }
+
+        /* About Modal */
+        .about-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .about-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .close-about {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-about:hover {
+            color: red;
+        }
+
+        /* Global text color for the web map */
+        html, body, #map, .leaflet-container, .leaflet-control, .leaflet-popup-content, .leaflet-control-layers label, 
+        .transparency-control label, .transparency-control .percentage, #measure-popup, #measure-popup label, 
+        #measure-popup button, #legend, #legend-title, .floating-nav-button, .map-title, .custom-file-input {
+            color: #eaeaea !important; /* Set text color to #eaeaea */
+        }
+
+        /* Specific styles for layer control text */
+        .leaflet-control-layers label {
+            color: #eaeaea !important; /* Text color for layer toggle */
+        }
+
+        /* Specific styles for legend text */
+        #legend-title, #legend {
+            color: #eaeaea !important; /* Text color for legend */
+        }
+
+        /* Specific styles for measure popup text */
+        #measure-popup label, #measure-popup .title, #measure-popup button {
+            color: #eaeaea !important; /* Text color for measure popup */
+        }
+
+        /* Specific styles for floating navigation buttons */
+        .floating-nav-button {
+            color: #eaeaea !important; /* Text color for floating buttons */
+        }
+
+        /* Specific styles for map title */
+        .map-title {
+            color: #eaeaea !important; /* Text color for map title */
+        }
+
+        /* Specific styles for custom file input (Load KML button) */
+        .custom-file-input {
+            color: #eaeaea !important; /* Text color for Load KML button */
+        }
+
+        /* Specific styles for transparency control */
+        .transparency-control label, .transparency-control .percentage {
+            color: #eaeaea !important; /* Text color for transparency control */
+        }
+
+        /* Specific styles for popup content */
+        .leaflet-popup-content {
+            color: #eaeaea !important; /* Text color for popup content */
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Page -->
+    <div id="welcome-page">
+        <!-- Welcome Content -->
+        <div class="welcome-content">
+            <h1>Mazowe Catchment Projects</h1>
+            <p>Geospatial Technologies for Delineating Groundwater Potential, Demand and Depletion Zones: A Case Study of Mazowe Catchment, Zimbabwe.</p>
+            
+            <!-- Get Started Button -->
+            <button class="get-started-btn" id="start-maps-button">Get Started</button>
+        </div>
+    </div>
+    
+    <!-- Map Page (hidden by default) -->
+    <div id="map"></div>
+    <div class="map-title">Sustainable Water Resource Management: Mazowe Catchment</div>
+    
+    <!-- Loading indicator -->
+    <div class="loading-indicator">
+        <div class="loading-spinner"></div>
+        <span>Loading data...</span>
+    </div>
+    
+    <!-- Floating navigation buttons for map page - at the top -->
+    <div class="floating-nav-buttons">
+        <div class="floating-nav-button" id="floating-home-button"><i class="fas fa-home"></i></div>
+        <div class="floating-nav-button" id="floating-about-button"><i class="fas fa-info-circle"></i></div>
+        <div class="floating-nav-button" id="floating-exit-button"><i class="fas fa-sign-out-alt"></i></div>
+    </div>
+
+    <!-- Measure popup that appears on the left side of the map - COMPACT VERSION -->
+    <div id="measure-popup">
+        <div class="title">Measurement Tool</div>
+        
+        <div class="form-group">
+            <label>Measurement Type:</label>
+            <div class="option-group">
+                <div class="radio-option">
+                    <input type="radio" id="measure-distance" name="measure-type" value="distance" checked>
+                    <label for="measure-distance">Distance</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" id="measure-area" name="measure-type" value="area">
+                    <label for="measure-area">Area</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group" id="distance-units-group">
+            <label for="distance-units">Distance Units:</label>
+            <select id="distance-units">
+                <option value="meters">Meters (m)</option>
+                <option value="kilometers">Kilometers (km)</option>
+                <option value="miles">Miles (mi)</option>
+                <option value="feet">Feet (ft)</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="area-units-group" style="display: none;">
+            <label for="area-units">Area Units:</label>
+            <select id="area-units">
+                <option value="sqmeters">Square Meters (m²)</option>
+                <option value="hectares">Hectares (ha)</option>
+                <option value="sqkilometers">Square Kilometers (km²)</option>
+                <option value="acres">Acres</option>
+            </select>
+        </div>
+        
+        <div id="measure-instructions">
+            Click points to create a path. Double-click to end.
+        </div>
+        
+        <div id="measure-result"></div>
+        
+        <div class="actions">
+            <button id="start-measure-btn">Start</button>
+            <button id="clear-measure-btn" class="secondary">Clear</button>
+        </div>
+    </div>
+    
+    <div id="legend">
+        <div id="legend-title">Legend</div>
+        <img id="legendImg" src="/placeholder.svg" alt="Legend will appear here">
+        <div id="kml-legend" class="kml-legend"></div>
+    </div>
+    <div id="file-input-container" style="position: absolute; bottom: 10px; left: 10px; z-index: 1000; display: none;">
+        <!-- Get Coordinates Button -->
+        <button id="get-coordinates-btn" class="custom-file-input" style="width: auto; padding: 6px 12px; font-size: 14px;">Get Coordinates</button>
+        <!-- Load KML Button -->
+        <label for="kml-input" class="custom-file-input" style="width: auto; padding: 6px 12px; font-size: 14px;">Load KML</label>
+        <input type="file" id="kml-input" accept=".kml" />
+    </div>
+
+    <!-- About Modal -->
+    <div id="about-modal" class="about-modal" style="display: none;">
+        <div class="about-content">
+            <span class="close-about" id="close-about">&times;</span>
+            <h2>About Mazowe Hydrology Project</h2>
+            <p>This application provides advanced tools for visualizing and analyzing hydrological data in the Mazowe catchment area of Zimbabwe.</p>
+            <p>Features include:</p>
+            <ul>
+                <li>Interactive map with multiple base layers</li>
+                <li>Hydrological data visualization</li>
+                <li>KML file upload and analysis</li>
+                <li>Measurement tools for distances and areas</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Create stars dynamically
+        function createStars() {
+            const starsContainer = document.getElementById('stars-container');
+            if (!starsContainer) return; // Check if container exists
+            
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            
+            // Clear any existing stars
+            starsContainer.innerHTML = '';
+            
+            // Create 100 random stars
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                
+                // Random position
+                const x = Math.random() * screenWidth;
+                const y = Math.random() * (screenHeight * 0.7); // Only in the top 70% (sky area)
+                
+                // Random size (0.5px to 2px)
+                const size = 0.5 + Math.random() * 1.5;
+                
+                // Random delay for the twinkle animation
+                const delay = Math.random() * 4;
+                
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.left = `${x}px`;
+                star.style.top = `${y}px`;
+                star.style.animationDelay = `${delay}s`;
+                
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // Check for dark mode preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+        
+        // Initialize map centered on Mutoko, Zimbabwe
+        var map = L.map('map', {
+            attributionControl: true,
+            zoomControl: false // We'll add our own zoom control in a specific position
+        });
+
+        // Add zoom control explicitly positioned below the navigation buttons
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+
+        // Base Maps with attribution
+        var osmBaseMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+
+        // Corrected Google Satellite base layer
+        var googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], // Required subdomains for Google Maps
+            attribution: '&copy; <a href="https://www.google.com/maps">Google Maps</a>'
+        });
+
+        // Move attribution to bottom left
+        map.attributionControl.setPosition('bottomleft');
+
+        /* GeoServer WMS Layers - with error handling for external connections */
+        var layers = {};
+        var layerOptions = [
+            {
+                key: "Groundwaterextraction",
+                name: "gwezTra16",
+                title: "Groundwater Demand"
+            },
+            {
+                key: "GroundWaterPotential",
+                name: "ugwpTra16",
+                title: "Groundwater Potential"
+            },
+            {
+                key: "GroundwaterdepleationZone",
+                name: "ugwdzTra16",
+                title: "Groundwater Depleation"
+            },
+            {
+                key: "Landuse land cover",
+                name: "lulcTra16",
+                title: "Land-use and Land-cover 2024"
+            },
+            {
+                key: "SurfaceWaterServiceArea",
+                name: "Surface-water Service Area",
+                title: "Surface Water Service Area"
+            }
+        ];
+
+        // Function to create a fallback layer if GeoServer connection fails
+        function createFallbackLayer(title) {
+            var canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            var ctx = canvas.getContext('2d');
+            
+            // Create a placeholder pattern
+            ctx.fillStyle = "#f0f0f0";
+            ctx.fillRect(0, 0, 256, 256);
+            
+            // Add layer name
+            ctx.fillStyle = "#666";
+            ctx.font = "12px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(title, 128, 128);
+            ctx.fillText("GeoServer unavailable", 128, 148);
+            
+            var dataURL = canvas.toDataURL();
+            
+            return L.tileLayer(dataURL, {
+                opacity: 0.7
+            });
+        }
+
+        // Try to connect to GeoServer, use fallback if it fails
+        layerOptions.forEach(layerOpt => {
+            try {
+                layers[layerOpt.key] = L.tileLayer.wms('http://localhost:8081/geoserver/Attachment/wms?', {
+                    layers: 'Attachment:' + layerOpt.name,
+                    format: 'image/png',
+                    transparent: true,
+                    version: '1.3.0',
+                    opacity: 1.0
+                });
+                
+                // Store the original layer name for legend requests
+                layers[layerOpt.key].name = layerOpt.name;
+                
+                // Add error handler
+                layers[layerOpt.key].on('tileerror', function() {
+                    // If we get a tile error, replace with fallback
+                    map.removeLayer(layers[layerOpt.key]);
+                    layers[layerOpt.key] = createFallbackLayer(layerOpt.title);
+                    if (map.hasLayer(layers[layerOpt.key])) {
+                        map.addLayer(layers[layerOpt.key]);
+                    }
+                });
+            } catch (e) {
+                console.log("Error creating layer: " + layerOpt.key + ". Using fallback.");
+                layers[layerOpt.key] = createFallbackLayer(layerOpt.title);
+            }
+        });
+
+        // Track the currently active overlay
+        var activeOverlay = null;
+
+        // Track uploaded KML layer
+        var uploadedKmlLayer = null;
+
+        // Track measurement state
+        var measureActive = false;
+        var measureLayer = null;
+        var currentMeasurement = null;
+        
+        // Unit conversion factors
+        const unitConversions = {
+            distance: {
+                meters: 1,
+                kilometers: 0.001,
+                miles: 0.000621371,
+                feet: 3.28084
+            },
+            area: {
+                sqmeters: 1,
+                hectares: 0.0001,
+                sqkilometers: 0.000001,
+                acres: 0.000247105
+            }
+        };
+        
+        // Unit symbols
+        const unitSymbols = {
+            meters: "m",
+            kilometers: "km",
+            miles: "mi",
+            feet: "ft",
+            sqmeters: "m²",
+            hectares: "ha",
+            sqkilometers: "km²",
+            acres: "ac"
+        };
+        
+        // Function to update the legend
+        function updateLegend(layerName) {
+            document.getElementById('legend').style.display = 'block';
+            
+            // Create a placeholder legend if we can't load from GeoServer
+            var legendImg = document.getElementById('legendImg');
+            legendImg.style.display = "block";
+            
+            try {
+                var legendUrl = `http://localhost:8081/geoserver/Attachment/wms?REQUEST=GetLegendGraphic&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=Attachment:${layerName}`;
+                legendImg.src = legendUrl;
+                
+                legendImg.onerror = function () {
+                    // Create a placeholder legend
+                    this.style.display = "none";
+                    var legendContainer = document.getElementById('legend');
+                    
+                    // Add placeholder text if image fails to load
+                    var placeholderText = document.createElement('div');
+                    placeholderText.textContent = "Legend unavailable";
+                    placeholderText.style.color = "#666";
+                    placeholderText.style.fontStyle = "italic";
+                    placeholderText.style.fontSize = "12px";
+                    placeholderText.style.textAlign = "center";
+                    placeholderText.style.margin = "10px 0";
+                    
+                    // Check if placeholder already exists
+                    var existingPlaceholder = legendContainer.querySelector('.legend-placeholder');
+                    if (!existingPlaceholder) {
+                        placeholderText.className = 'legend-placeholder';
+                        legendContainer.appendChild(placeholderText);
+                    }
+                };
+            } catch (e) {
+                legendImg.style.display = "none";
+                console.log("Error loading legend: " + e);
+            }
+        }
+
+        // Function to create transparency control
+        function createTransparencyControl() {
+            var transparencyControl = L.control({position: 'topright'});
+            
+            transparencyControl.onAdd = function(map) {
+                var div = L.DomUtil.create('div', 'transparency-control');
+                div.innerHTML = '<label for="opacity-slider">Layer Opacity</label>' +
+                               '<input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="1">' +
+                               '<div class="percentage" id="opacity-percentage">100%</div>';
+                
+                var slider = div.querySelector('#opacity-slider');
+                var percentageDisplay = div.querySelector('#opacity-percentage');
+                
+                slider.addEventListener('input', function() {
+                    var opacityValue = parseFloat(this.value);
+                    if (activeOverlay) {
+                        activeOverlay.setOpacity(opacityValue);
+                    }
+                    // Update percentage display
+                    percentageDisplay.textContent = Math.round(opacityValue * 100) + '%';
+                });
+                
+                return div;
+            };
+            
+            return transparencyControl;
+        }
+
+        // Add layer control to the map that always stays expanded
+        var baseMaps = {
+            "OpenStreetMap": osmBaseMap,
+            "Google Satellite": googleSat
+        };
+
+        var overlayMaps = {
+            "Groundwater Demand": layers["Groundwaterextraction"],
+            "Groundwater Potential": layers["GroundWaterPotential"],
+            "Groundwater Depleation": layers["GroundwaterdepleationZone"],
+            "Land-use and Land-cover 2024": layers["Landuse land cover"],
+            "Surface Water Service Area": layers["SurfaceWaterServiceArea"]
+        };
+
+        // Create always-expanded layer control
+        var layerControl = L.control.layers(baseMaps, overlayMaps, {
+            position: 'topright', // Move the layers controller to the top-right corner
+            collapsed: false // Never collapse
+        }).addTo(map);
+
+        // Add transparency control
+        var transparencyControl = createTransparencyControl().addTo(map);
+
+        // Function to start measurement
+        function startMeasurement() {
+            // Clear any existing measurement
+            if (measureLayer) {
+                map.removeLayer(measureLayer);
+            }
+            
+            // Get measurement type and units
+            var measureType = document.querySelector('input[name="measure-type"]:checked').value;
+            var distanceUnit = document.getElementById('distance-units').value;
+            var areaUnit = document.getElementById('area-units').value;
+            
+            // Reset measurement state
+            measureActive = true;
+            currentMeasurement = {
+                points: [],
+                distance: 0,
+                area: 0,
+                type: measureType,
+                distanceUnit: distanceUnit,
+                areaUnit: areaUnit
+            };
+            
+            // Create new layer for measurement
+            measureLayer = L.layerGroup().addTo(map);
+            
+            // Change cursor to indicate measurement mode
+            map.getContainer().style.cursor = 'crosshair';
+            
+            // Clear result display
+            document.getElementById('measure-result').textContent = '';
+            
+            // Add click handler to map for measurements
+            map._measureClickHandler = function(e) {
+                var latlng = e.latlng;
+                currentMeasurement.points.push(latlng);
+                
+                // Add marker at click point
+                L.circleMarker(latlng, {
+                    color: '#0052cc',
+                    fillColor: '#4d94ff',
+                    fillOpacity: 0.7,
+                    radius: 4,
+                    weight: 2
+                }).addTo(measureLayer);
+                
+                // If we have at least 2 points, draw a line
+                if (currentMeasurement.points.length > 1) {
+                    var lastPoint = currentMeasurement.points[currentMeasurement.points.length - 2];
+                    var newPoint = currentMeasurement.points[currentMeasurement.points.length - 1];
+                    
+                    // Draw line segment
+                    L.polyline([lastPoint, newPoint], {
+                        color: '#0052cc',
+                        weight: 3,
+                        opacity: 0.7,
+                        dashArray: '5, 5'
+                    }).addTo(measureLayer);
+                    
+                    // Calculate segment distance
+                    var segmentDistance = lastPoint.distanceTo(newPoint);
+                    currentMeasurement.distance += segmentDistance;
+                    
+                    // Update measurement display
+                    updateMeasurementDisplay();
+                }
+            };
+            
+            // Add the click handler to the map
+            map.on('click', map._measureClickHandler);
+            
+            // If measuring area, add double-click handler to end measurement
+            if (measureType === 'area') {
+                map._measureDblClickHandler = function(e) {
+                    if (currentMeasurement.points.length > 2) {
+                        // Close the polygon
+                        var polygon = L.polygon(currentMeasurement.points, {
+                            color: '#0052cc',
+                            fillColor: '#4d94ff',
+                            fillOpacity: 0.2,
+                            weight: 2
+                        }).addTo(measureLayer);
+                        
+                        // Calculate area
+                        currentMeasurement.area = L.GeometryUtil.geodesicArea(currentMeasurement.points);
+                        
+                        // Update measurement display with area
+                        updateMeasurementDisplay(true);
+                    }
+                    
+                    // End measurement mode
+                    setTimeout(endMeasurement, 100);
+                };
+                
+                // Add the double-click handler to the map
+                map.on('dblclick', map._measureDblClickHandler);
+            } else {
+                // For distance-only measurement, double-click just ends the measurement
+                map._measureDblClickHandler = function() {
+                    setTimeout(endMeasurement, 100);
+                };
+                
+                // Add the double-click handler to the map
+                map.on('dblclick', map._measureDblClickHandler);
+            }
+            
+            // Update button text
+            document.getElementById('start-measure-btn').textContent = 'Stop';
+        }
+        
+        function endMeasurement() {
+            // Remove map handlers
+            if (map._measureClickHandler) {
+                map.off('click', map._measureClickHandler);
+                map._measureClickHandler = null;
+            }
+            if (map._measureDblClickHandler) {
+                map.off('dblclick', map._measureDblClickHandler);
+                map._measureDblClickHandler = null;
+            }
+            
+            // Reset cursor
+            map.getContainer().style.cursor = '';
+            
+            // Keep the measure layer but set measurement as inactive
+            measureActive = false;
+            
+            // Update button text
+            document.getElementById('start-measure-btn').textContent = 'Start';
+        }
+        
+        function clearMeasurement() {
+            // End measurement mode
+            endMeasurement();
+            
+            // Remove the measure layer
+            if (measureLayer) {
+                map.removeLayer(measureLayer);
+                measureLayer = null;
+            }
+            
+            // Reset current measurement
+            currentMeasurement = null;
+            
+            // Clear measurement display
+            document.getElementById('measure-result').textContent = '';
+            
+            // Reset button text
+            document.getElementById('start-measure-btn').textContent = 'Start';
+        }
+        
+        function updateMeasurementDisplay(includeArea) {
+            if (!currentMeasurement) return;
+            
+            var result = '';
+            
+            // Format distance with selected unit
+            var convertedDistance = currentMeasurement.distance * unitConversions.distance[currentMeasurement.distanceUnit];
+            
+            // Format the number appropriately based on size
+            var formattedDistance = formatNumber(convertedDistance);
+            var distanceText = formattedDistance + ' ' + unitSymbols[currentMeasurement.distanceUnit];
+            
+            result = 'Distance: ' + distanceText;
+            
+            // Add area if available and if we're measuring area
+            if (includeArea && currentMeasurement.area && currentMeasurement.type === 'area') {
+                var convertedArea = currentMeasurement.area * unitConversions.area[currentMeasurement.areaUnit];
+                var formattedArea = formatNumber(convertedArea);
+                var areaText = formattedArea + ' ' + unitSymbols[currentMeasurement.areaUnit];
+                result += '<br>Area: ' + areaText;
+            }
+            
+            document.getElementById('measure-result').innerHTML = result;
+        }
+        
+        // Helper function to format numbers with appropriate decimal places
+        function formatNumber(value) {
+            if (value >= 1000) {
+                return value.toFixed(1).replace(/\.0$/, '');
+            } else if (value >= 100) {
+                return value.toFixed(1).replace(/\.0$/, '');
+            } else if (value >= 10) {
+                return value.toFixed(2).replace(/\.00$/, '');
+            } else {
+                return value.toFixed(2).replace(/\.00$/, '');
+            }
+        }
+
+        // Function to add measure button to zoom control
+        function addMeasureButtonToZoomControl() {
+            // Look for the zoom control container
+            var zoomControlContainer = document.querySelector('.leaflet-control-zoom');
+            if (!zoomControlContainer) return;
+            
+            // Check if measure button already exists
+            if (document.querySelector('.leaflet-control-zoom-measure')) return;
+            
+            // Create the measure button
+            var measureButton = document.createElement('a');
+            measureButton.href = '#';
+            measureButton.className = 'leaflet-control-zoom-measure';
+            measureButton.innerHTML = '<i class="fas fa-ruler"></i>';
+            measureButton.title = 'Measure distances and areas';
+            
+            // Add measure button to zoom control
+            zoomControlContainer.appendChild(measureButton);
+            
+            // Add click handler to toggle measurement panel
+            measureButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                var measurePopup = document.getElementById('measure-popup');
+                if (measurePopup.style.display === 'block') {
+                    measurePopup.style.display = 'none';
+                    
+                    // Also clear any active measurement
+                    if (measureActive) {
+                        clearMeasurement();
+                    }
+                } else {
+                    measurePopup.style.display = 'block';
+                }
+            });
+        }
+        
+        // Set up event listeners for the measurement tool
+        function setupMeasurementTool() {
+            // Radio button for measurement type
+            document.querySelectorAll('input[name="measure-type"]').forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    // Show/hide the appropriate units dropdown
+                    if (this.value === 'distance') {
+                        document.getElementById('distance-units-group').style.display = 'block';
+                        document.getElementById('area-units-group').style.display = 'none';
+                    } else {
+                        document.getElementById('distance-units-group').style.display = 'block';
+                        document.getElementById('area-units-group').style.display = 'block';
+                    }
+                });
+            });
+            
+            // Unit selection changes
+            document.getElementById('distance-units').addEventListener('change', function() {
+                if (currentMeasurement) {
+                    currentMeasurement.distanceUnit = this.value;
+                    updateMeasurementDisplay(currentMeasurement.type === 'area');
+                }
+            });
+            
+            document.getElementById('area-units').addEventListener('change', function() {
+                if (currentMeasurement && currentMeasurement.type === 'area') {
+                    currentMeasurement.areaUnit = this.value;
+                    updateMeasurementDisplay(true);
+                }
+            });
+            
+            // Start/stop measurement button
+            document.getElementById('start-measure-btn').addEventListener('click', function() {
+                if (measureActive) {
+                    endMeasurement();
+                } else {
+                    startMeasurement();
+                }
+            });
+            
+            // Clear measurement button
+            document.getElementById('clear-measure-btn').addEventListener('click', clearMeasurement);
+        }
+
+        // Ensure only one overlay layer is active at a time
+        map.on('overlayadd', function (e) {
+            // Loop through all overlay layers
+            for (var key in layers) {
+                if (layers[key] !== e.layer && map.hasLayer(layers[key])) {
+                    // Remove any other active overlay layers
+                    map.removeLayer(layers[key]);
+                }
+            }
+            // Set the newly added layer as the active overlay
+            activeOverlay = e.layer;
+
+            // Update the legend for the active layer
+            if (e.layer.name) {
+                updateLegend(e.layer.name);
+            }
+
+            // Update the opacity slider to reflect the current layer's opacity
+            var slider = document.getElementById('opacity-slider');
+            var percentageDisplay = document.getElementById('opacity-percentage');
+            if (slider) {
+                var opacityValue = 1.0; // Default opacity
+                slider.value = opacityValue;
+                percentageDisplay.textContent = Math.round(opacityValue * 100) + '%';
+                e.layer.setOpacity(opacityValue);
+            }
+        });
+
+        // Ensure the active overlay is cleared when removed
+        map.on('overlayremove', function (e) {
+            if (activeOverlay === e.layer) {
+                activeOverlay = null;
+                document.getElementById('legend').style.display = 'none'; // Hide the legend
+            }
+        });
+
+        // Function to update KML legend with appropriate symbology
+        function updateKmlLegend(geometryTypes) {
+            var kmlLegend = document.getElementById('kml-legend');
+            kmlLegend.innerHTML = '<div style="font-weight:bold; margin-bottom:4px;">KML Layer</div>';
+            
+            if (geometryTypes.point) {
+                kmlLegend.innerHTML += '<div class="kml-legend-item">' +
+                                      '<div class="point-color"></div>' +
+                                      '<div>Points</div>' +
+                                      '</div>';
+            }
+            if (geometryTypes.line) {
+                kmlLegend.innerHTML += '<div class="kml-legend-item">' +
+                                      '<div class="line-color"></div>' +
+                                      '<div>Lines</div>' +
+                                      '</div>';
+            }
+            if (geometryTypes.polygon) {
+                kmlLegend.innerHTML += '<div class="kml-legend-item">' +
+                                      '<div class="polygon-color"></div>' +
+                                      '<div>Polygons</div>' +
+                                      '</div>';
+            }
+        }
+
+        // Load KML file
+        document.getElementById('kml-input').addEventListener('change', function (event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            
+            // Show loading indicator
+            document.querySelector('.loading-indicator').style.display = 'flex';
+
+            // Remove previous KML layer if exists
+            if (uploadedKmlLayer) {
+                map.removeLayer(uploadedKmlLayer);
+                document.getElementById('kml-legend').innerHTML = '';
+            }
+
+            // Create a file reader
+            var reader = new FileReader();
+            
+            reader.onload = function(e) {
+                var kmlContent = e.target.result;
+                
+                try {
+                    // Parse the KML file
+                    var kmlLayer = omnivore.kml.parse(kmlContent);
+                    
+                    // Track geometry types in this KML
+                    var geometryTypes = {
+                        point: false,
+                        line: false,
+                        polygon: false
+                    };
+                    
+                    // Style the KML layer
+                    kmlLayer.eachLayer(function(layer) {
+                        if (layer.feature && layer.feature.geometry) {
+                            var geomType = layer.feature.geometry.type;
+                            
+                            // Style based on geometry type
+                            if (geomType === 'Point') {
+                                geometryTypes.point = true;
+                                layer.setStyle({
+                                    radius: 5,
+                                    fillColor: '#ff0000',
+                                    color: '#fff',
+                                    weight: 1,
+                                    opacity: 1,
+                                    fillOpacity: 0.8
+                                });
+                            } 
+                            else if (geomType === 'LineString') {
+                                geometryTypes.line = true;
+                                layer.setStyle({
+                                    color: '#00aa00',
+                                    weight: 2,
+                                    opacity: 1
+                                });
+                            }
+                            else if (geomType === 'Polygon') {
+                                geometryTypes.polygon = true;
+                                layer.setStyle({
+                                    color: '#0000ff',
+                                    weight: 1.5,
+                                    opacity: 1,
+                                    fillColor: 'rgba(0, 0, 255, 0.2)',
+                                    fillOpacity: 0.2
+                                });
+                            }
+                            
+                            // Set up popup for the layer
+                            if (layer.feature.properties) {
+                                var props = layer.feature.properties;
+                                var popupContent = [];
+                                
+                                if (props.name) {
+                                    popupContent.push('<b>Name:</b> ' + props.name);
+                                }
+                                
+                                for (var key in props) {
+                                    if (key !== 'name' && props[key]) {
+                                        popupContent.push('<b>' + key + ':</b> ' + props[key]);
+                                    }
+                                }
+                                
+                                if (popupContent.length > 0) {
+                                    layer.bindPopup(popupContent.join('<br>'), { 
+                                        className: 'custom-popup',
+                                        maxWidth: 280
+                                    });
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Add to map and store reference
+                    kmlLayer.addTo(map);
+                    uploadedKmlLayer = kmlLayer;
+                    
+                    // Update the KML legend with appropriate symbology
+                    updateKmlLegend(geometryTypes);
+                    
+                    // Fit bounds to the KML layer
+                    if (kmlLayer.getBounds && kmlLayer.getBounds().isValid()) {
+                        map.fitBounds(kmlLayer.getBounds());
+                    }
+                } catch (e) {
+                    console.error("Error parsing KML:", e);
+                    alert("Error loading KML file: " + e.message);
+                }
+                
+                // Hide loading indicator
+                document.querySelector('.loading-indicator').style.display = 'none';
+            };
+            
+            reader.onerror = function() {
+                alert('Error reading KML file');
+                // Hide loading indicator on error
+                document.querySelector('.loading-indicator').style.display = 'none';
+            };
+            
+            reader.readAsText(file);
+        });
+
+        // Function to format feature info response as a table
+        function formatFeatureInfo(features) {
+            if (!features || features.length === 0) {
+                return "No feature information available";
+            }
+            
+            var content = '<div class="feature-info-popup">';
+            
+            features.forEach(function(feature, index) {
+                if (feature.properties) {
+                    content += '<h4 class="font-semibold mb-1">Feature ' + (index + 1) + '</h4>';
+                    content += '<table class="feature-info-table">';
+                    content += '<tr><th>Property</th><th>Value</th></tr>';
+                    
+                    for (var prop in feature.properties) {
+                        if (feature.properties.hasOwnProperty(prop)) {
+                            content += '<tr><td>' + prop + '</td><td>' + feature.properties[prop] + '</td></tr>';
+                        }
+                    }
+                    
+                    content += '</table>';
+                }
+            });
+            
+            content += '</div>';
+            return content;
+        }
+
+        // Function to show the welcome page and hide the map
+        function showWelcomePage() {
+            document.getElementById('welcome-page').style.display = 'flex';
+            document.getElementById('map').style.display = 'none';
+            document.getElementById('legend').style.display = 'none';
+            document.getElementById('file-input-container').style.display = 'none'; // Hide buttons on the home page
+            document.querySelector('.map-title').style.display = 'none';
+            document.querySelector('.transparency-control').style.display = 'none';
+            document.querySelector('.leaflet-control-zoom').style.display = 'none';
+            document.querySelector('.floating-nav-buttons').style.display = 'none';
+            document.querySelector('.leaflet-control-layers').style.display = 'none';
+            document.getElementById('measure-popup').style.display = 'none';
+
+            // Clean up any active measurement
+            if (measureActive) {
+                clearMeasurement();
+            }
+
+            // Create stars in the background
+            createStars();
+        }
+
+        // Function to show the map and hide the welcome page
+        function showMapPage() {
+            // Show loading indicator
+            document.querySelector('.loading-indicator').style.display = 'flex';
+
+            document.getElementById('welcome-page').style.display = 'none';
+            document.getElementById('map').style.display = 'block';
+
+            // Set the view to Mutoko, Zimbabwe with zoom level 8 as requested
+            map.setView([-17.401, 32.217], 8);
+
+            // Add default base layer (OpenStreetMap) if not already added
+            if (!map.hasLayer(osmBaseMap)) {
+                osmBaseMap.addTo(map);
+            }
+
+            // Add the Landuse land cover layer as the default layer if not already added
+            if (!activeOverlay) {
+                layers["Landuse land cover"].addTo(map);
+                activeOverlay = layers["Landuse land cover"];
+                // Set opacity to 100% (1.0) as requested
+                activeOverlay.setOpacity(1.0);
+                if (layers["Landuse land cover"].name) {
+                    updateLegend(layers["Landuse land cover"].name);
+                }
+            }
+
+            // Short delay to allow map to initialize before showing UI elements
+            setTimeout(function() {
+                document.getElementById('legend').style.display = 'block';
+                document.getElementById('file-input-container').style.display = 'block'; // Show buttons on the map
+                document.querySelector('.map-title').style.display = 'block';
+                document.querySelector('.transparency-control').style.display = 'block';
+                document.querySelector('.leaflet-control-zoom').style.display = 'block';
+                document.querySelector('.floating-nav-buttons').style.display = 'block';
+                document.querySelector('.leaflet-control-layers').style.display = 'block';
+                document.querySelector('.loading-indicator').style.display = 'none';
+
+                // Add the measure button to zoom controls
+                addMeasureButtonToZoomControl();
+
+                // Set up measurement tool events
+                setupMeasurementTool();
+
+                // Force the layer control to stay expanded
+                setTimeout(function() {
+                    var layerToggle = document.querySelector('.leaflet-control-layers-toggle');
+                    if (layerToggle) {
+                        layerToggle.style.display = 'none';
+                    }
+                    document.querySelector('.leaflet-control-layers').classList.add('leaflet-control-layers-expanded');
+                }, 100);
+
+                // Force map to recalculate its size
+                map.invalidateSize();
+            }, 300);
+        }
+
+        // Add dependency for area calculations
+        L.GeometryUtil = {
+            // Calculate geodesic area of a polygon - implementation from Leaflet-measure plugin
+            geodesicArea: function(latLngs) {
+                var pointsCount = latLngs.length,
+                    area = 0.0,
+                    d2r = Math.PI / 180,
+                    p1, p2;
+
+                if (pointsCount > 2) {
+                    for (var i = 0; i < pointsCount; i++) {
+                        p1 = latLngs[i];
+                        p2 = latLngs[(i + 1) % pointsCount];
+                        area += ((p2.lng - p1.lng) * d2r) *
+                                (2 + Math.sin(p1.lat * d2r) + Math.sin(p2.lat * d2r));
+                    }
+                    area = area * 6378137.0 * 6378137.0 / 2.0;
+                }
+
+                return Math.abs(area);
+            }
+        };
+
+        // Add stars when window loads or resizes
+        window.addEventListener('load', createStars);
+        window.addEventListener('resize', createStars);
+
+        // Home button functionality
+        document.getElementById('floating-home-button').addEventListener('click', showWelcomePage);
+
+        // Maps button functionality
+        document.getElementById('start-maps-button').addEventListener('click', showMapPage);
+
+        // About button functionality
+        document.getElementById('floating-about-button').addEventListener('click', function () {
+            document.getElementById('about-modal').style.display = 'flex';
+        });
+
+        // Close About modal
+        document.getElementById('close-about').addEventListener('click', function () {
+            document.getElementById('about-modal').style.display = 'none';
+        });
+
+        // Exit button functionality
+        document.getElementById('floating-exit-button').addEventListener('click', function () {
+            if (confirm("Are you sure you want to exit the application?")) {
+                if (window.opener) {
+                    window.close(); // Close the current tab if opened by another window
+                } else {
+                    window.open('', '_self').close(); // Attempt to close the current tab
+                }
+            }
+        });
+
+        let collectingCoordinates = false;
+        let collectedCoordinates = [];
+        let markersLayer = L.layerGroup().addTo(map); // Layer group to hold all markers
+
+        // Function to handle the "Get Coordinates" button
+        document.getElementById('get-coordinates-btn').addEventListener('click', function () {
+            const button = document.getElementById('get-coordinates-btn');
+
+            if (button.textContent === 'Clear Coordinates') {
+                // Clear all collected coordinates
+                markersLayer.clearLayers();
+                collectedCoordinates = [];
+                alert("All collected coordinates have been cleared.");
+                button.textContent = 'Get Coordinates'; // Reset button to initial state
+                return;
+            }
+
+            if (collectingCoordinates) {
+                // Stop collecting coordinates
+                collectingCoordinates = false;
+                map.off('click', collectCoordinates);
+                button.textContent = 'Clear Coordinates'; // Change button to "Clear Coordinates"
+
+                // Ask if the user wants to download the CSV
+                if (collectedCoordinates.length > 0) {
+                    const download = confirm("Do you want to download the collected coordinates as a CSV file?");
+                    if (download) {
+                        downloadCoordinatesAsCSV();
+                    }
+                } else {
+                    alert("No coordinates were collected.");
+                }
+
+                return;
+            }
+
+            // Start collecting coordinates
+            collectingCoordinates = true;
+            collectedCoordinates = [];
+            button.textContent = 'Stop'; // Change button to "Stop"
+            alert("Click on the map to collect coordinates. Click 'Stop' to finish.");
+
+            // Add click event listener to the map
+            map.on('click', collectCoordinates);
+        });
+
+        // Function to collect coordinates on map click
+        function collectCoordinates(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+
+            // Prompt the user to input a name for the point
+            const pointName = prompt("Enter a name for this point:");
+
+            // Format the coordinates in WGS 84
+            const formattedCoordinates = {
+                Name: pointName || "Unnamed",
+                CRS: "WGS 84",
+                Latitude: lat.toFixed(6),
+                Longitude: lng.toFixed(6)
+            };
+
+            collectedCoordinates.push(formattedCoordinates);
+
+            // Add a default marker to the map for the clicked point
+            const marker = L.marker(e.latlng, {
+                title: pointName || "Unnamed"
+            }).addTo(markersLayer);
+
+            marker.bindPopup(`<b>${pointName || "Unnamed"}</b><br>Lat: ${formattedCoordinates.Latitude}<br>Lng: ${formattedCoordinates.Longitude}`).openPopup();
+
+            alert(`Collected: ${JSON.stringify(formattedCoordinates)}`);
+        }
+
+        // Function to download collected coordinates as a CSV file
+        function downloadCoordinatesAsCSV() {
+            if (collectedCoordinates.length === 0) {
+                alert("No coordinates to download.");
+                return;
+            }
+
+            // Generate CSV content with column names
+            const columnNames = Object.keys(collectedCoordinates[0]).join(",");
+            const csvContent = "data:text/csv;charset=utf-8," +
+                columnNames + "\n" +
+                collectedCoordinates.map(coord => Object.values(coord).join(",")).join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "coordinates.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
